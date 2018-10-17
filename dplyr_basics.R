@@ -1,10 +1,11 @@
-install.packages("tidyverse")
 library(tidyverse)
+
 # load NYC flights dataset from Bureau of transportation statistics
 install.packages("nycflights13")
 library(nycflights13)
 flights
-# dplyr filter
+
+# ================ dplyr filter ================
 jan1 <- filter(flights, month == 1 , day == 1)
 (dec25 <- filter(flights, month == 12, day == 25))
 (q1.1 <- filter(flights, arr_delay > 2))
@@ -14,7 +15,8 @@ filter(flights, dep_delay <= 0 & arr_delay > 2)
 filter(flights, dep_time >= 0 & dep_time <= 600)
 filter(flights, between(dep_time, 0, 600))
 sum(is.na(flights$dep_time))
-# dplyr arrange
+
+# ================ dplyr arrange ================ 
 arrange(flights, year, month, day)
 arrange(flights, desc(arr_delay))
 arrange(flights, desc(is.na(arr_delay)))
@@ -25,34 +27,40 @@ ggplot(data = flights) + geom_smooth(mapping= aes(x= sched_dep_time, y = arr_del
 # Fastest flight
 flights$avg_mph <- flights$distance / (flights$air_time / 60)
 select(arrange(flights, desc(avg_mph)), year, month, carrier, flight, origin, dest, distance, air_time, avg_mph)
-# dplyr select
+
+# ================ dplyr select ================
 select(flights, contains("delay"))
 fields <- c("origin", "dest")
 select(flights, one_of(fields))
 select(flights, contains("TIME"))
 
-# dplyr mutate
+# ================ dplyr mutate ================
 flights_sml <- select(flights,
                       year:day,
                       ends_with("delay"),
                       distance,
                       air_time,
                       avg_mph)
+
+# check average speed, minutes gained vs. scheduled time and gain per hour of flight time
 mutate(flights_sml,
        gain = arr_delay - dep_delay,
        speed = distance / air_time * 60,
        hours = air_time / 60,
        gain_per_hour = gain / hours)
-# dplyr transmute
+
+# ================ dplyr transmute================
 transmute(flights_sml,
        gain = arr_delay - dep_delay,
        speed = distance / air_time * 60,
        hours = air_time / 60,
        gain_per_hour = gain / hours)
+
 transmute(flights,
           dep_time,
           hours = dep_time %/% 100,
           minutes = dep_time %% 100)
+
 # offsets
 (x <- 1:10) 
 lag(x)
@@ -108,4 +116,12 @@ flights %>%
 
 flights %>%
   top_n(10, dep_delay)
+
+# ================ dplyr summarize ================
+summarize(flights, delay = mean(dep_delay, na.rm = TRUE))
+
+# delays by date
+by_day <- group_by(flights, date = ISOdate(year, month, day))
+(delay_by_day <- summarise(by_day, delay = mean(dep_delay, na.rm = TRUE)))
+ggplot(data = delay_by_day, mapping = aes(x = date, y = delay)) + geom_line() + geom_smooth()
 
