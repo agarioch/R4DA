@@ -125,3 +125,73 @@ by_day <- group_by(flights, date = ISOdate(year, month, day))
 (delay_by_day <- summarise(by_day, delay = mean(dep_delay, na.rm = TRUE)))
 ggplot(data = delay_by_day, mapping = aes(x = date, y = delay)) + geom_line() + geom_smooth()
 
+# delays by distance/destination
+by_dest <- group_by(flights, dest) %>%
+  summarize(count = n(),
+            dist = mean(distance, na.rm = TRUE),
+            delay = mean(arr_delay, na.rm = TRUE)) %>%
+  filter(count > 20, dest != "HNL")
+ggplot(by_dest, mapping = aes(x = dist, y = delay)) +
+  geom_point(aes(size = count), alpha = 0.3) +
+  geom_smooth(se = FALSE)
+# Colombia Met Airport with longest average delay 41.8 hours across 116 flights in the dataset
+filter(by_dest, delay > 40)
+# 5 destination airports with delay less than 0hrs
+filter(by_dest, delay <0) %>%
+  summarize(n())
+
+# na delay represents cancelled flights
+not_cancelled <- flights %>%
+  filter(!is.na(arr_delay), !is.na(dep_delay))
+
+sum(is.na(flights$arr_delay) | is.na(flights$dep_delay))
+
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarize(mean = mean(dep_delay))
+
+delays <- not_cancelled %>%
+  group_by(tailnum) %>%
+  summarize(delay = mean(arr_delay),
+            n = n())
+
+ggplot(data = delays, mapping = aes(x = delay)) +
+  geom_freqpoly(binwidth = 10)
+
+ggplot(data = delays, mapping = aes(x = n, y = delay)) +
+  geom_point(alpha = 0.3)
+
+delays %>%
+  filter(n > 25) %>%
+  ggplot(mapping = aes(x = n, y = delay)) +
+    geom_point(alpha = 0.3)
+
+not_cancelled %>%
+  group_by(dest) %>%
+  summarize(n = n())
+
+not_cancelled %>% count(dest)
+
+not_cancelled %>% count(tailnum, wt = distance)
+
+not_cancelled %>%
+  group_by(tailnum) %>%
+  summarize(sum(distance))
+
+# Look at the average number of cancelled flights per day, is there a pattern?
+cancelled <- flights %>%
+  filter(is.na(dep_delay))
+
+cancelled %>%
+  group_by(date = ISOdate(year, month, day)) %>%
+  summarise(n = n()) %>%
+  ggplot(aes(y = n, x = date)) + geom_line(color = "#005eb8")
+
+flights
+ggplot(flights, mapping= aes(x=carrier)) + geom_bar()
+mean(flights$distance)
+flights %>%
+  filter(distance > 2000) %>%
+  group_by(carrier) %>%
+  summarize(avg_dist = mean(distance)) %>%
+  ggplot(mapping = aes(y = avg_dist, x = carrier)) + geom_bar(stat = "identity", color = "purple")
